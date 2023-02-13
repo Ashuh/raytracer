@@ -4,11 +4,11 @@
 #include "vec3.h"
 #include <ostream>
 
-void writeColor(std::ostream &out, Color pixel_color) {
+void writeColor(std::ostream &out, Color color) {
     // Write the translated [0,255] value of each color component.
-    out << static_cast<int>(255.999 * pixel_color.x()) << ' '
-        << static_cast<int>(255.999 * pixel_color.y()) << ' '
-        << static_cast<int>(255.999 * pixel_color.z()) << '\n';
+    out << static_cast<int>(255.999 * color.x()) << ' '
+        << static_cast<int>(255.999 * color.y()) << ' '
+        << static_cast<int>(255.999 * color.z()) << '\n';
 }
 
 #endif//RAYTRACER_COLOR_H
