@@ -7,9 +7,16 @@
 #include "util.h"
 #include <iostream>
 
-Color rayColor(const Ray &r, const Hittable &world) {
-    if (auto rec = world.hit(r, 0, std::numeric_limits<double>::infinity())) {
-        return 0.5 * (rec->normal + Color(1, 1, 1));
+Color rayColor(const Ray &r, const Hittable &world, int depth) {
+    // If we've exceeded the ray bounce limit, no more light is gathered.
+    if (depth <= 0) {
+        return {0, 0, 0};
+    }
+
+    if (auto rec = world.hit(r, 0.001, std::numeric_limits<double>::infinity())) {
+        Point3 target = rec->p + rec->normal + randomUnitVector();
+        Ray reflectedRay = Ray(rec->p, target - rec->p);
+        return 0.5 * rayColor(reflectedRay, world, depth - 1);
     }
     Vec3 unit_direction = unitVector(r.direction());
     auto t = 0.5 * (unit_direction.y() + 1.0);
@@ -22,6 +29,7 @@ int main() {
     const int image_width = 400;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     const int samplesPerPixel = 100;
+    const int maxDepth = 50;
 
     // World
     HittableList world;
@@ -48,7 +56,7 @@ int main() {
                 auto u = (i + randomDouble()) / (image_width - 1);
                 auto v = (j + randomDouble()) / (image_height - 1);
                 Ray r = cam.getRay(u, v);
-                pixelColor += rayColor(r, world);
+                pixelColor += rayColor(r, world, maxDepth);
             }
 
             pixelColor /= samplesPerPixel;

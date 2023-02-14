@@ -1,12 +1,21 @@
 #ifndef RAYTRACER_VEC3_H
 #define RAYTRACER_VEC3_H
 
+#include "util.h"
 #include <array>
 #include <cmath>
 #include <ostream>
 
 class Vec3 {
 public:
+    inline static Vec3 random() {
+        return {randomDouble(), randomDouble(), randomDouble()};
+    }
+
+    inline static Vec3 random(double min, double max) {
+        return {randomDouble(min, max), randomDouble(min, max), randomDouble(min, max)};
+    }
+
     Vec3() : e{0, 0, 0} {}
 
     Vec3(double e0, double e1, double e2) : e{e0, e1, e2} {}
@@ -84,7 +93,7 @@ inline Vec3 operator*(const Vec3 &v, double t) {
     return t * v;
 }
 
-inline Vec3 operator/(Vec3 v, double t) {
+inline Vec3 operator/(const Vec3 &v, double t) {
     return (1 / t) * v;
 }
 
@@ -100,6 +109,20 @@ inline Vec3 cross(const Vec3 &u, const Vec3 &v) {
 
 inline Vec3 unitVector(const Vec3 &v) {
     return v / v.length();
+}
+
+Vec3 randomInUnitSphere() {
+    while (true) {
+        auto p = Vec3::random(-1, 1);
+        if (p.lengthSquared() >= 1) {
+            continue;
+        }
+        return p;
+    }
+}
+
+inline Vec3 randomUnitVector() {
+    return unitVector(randomInUnitSphere());
 }
 
 #endif//RAYTRACER_VEC3_H

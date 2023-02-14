@@ -11,6 +11,11 @@ void writeColor(std::ostream &out, Color color) {
     auto g = color.y();
     auto b = color.z();
 
+    // gamma correction
+    r = sqrt(r);
+    g = sqrt(g);
+    b = sqrt(b);
+
     out << static_cast<int>(256 * std::clamp(r, 0.0, 0.999)) << ' '
         << static_cast<int>(256 * std::clamp(g, 0.0, 0.999)) << ' '
         << static_cast<int>(256 * std::clamp(b, 0.0, 0.999)) << '\n';
