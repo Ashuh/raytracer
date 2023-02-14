@@ -44,6 +44,7 @@ MaxEmptyLinesToKeep: 2
 NamespaceIndentation: All
 ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: true
+#PackConstructorInitializers: CurrentLine
 PointerAlignment: Right
 ReflowComments: false
 SpaceAfterCStyleCast: true
