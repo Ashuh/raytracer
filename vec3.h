@@ -138,5 +138,12 @@ inline Vec3 reflect(const Vec3 &v, const Vec3 &n) {
     return v - 2 * dot(v, n) * n;
 }
 
+Vec3 refract(const Vec3 &v, const Vec3 &n, double refractionRatio) {
+    Vec3 uv = unitVector(v);
+    auto cosTheta = std::min(dot(-uv, n), 1.0);
+    Vec3 rOutPerp = refractionRatio * (uv + cosTheta * n);
+    Vec3 rOutParallel = -std::sqrt(fabs(1.0 - rOutPerp.lengthSquared())) * n;
+    return rOutPerp + rOutParallel;
+}
 
 #endif//RAYTRACER_VEC3_H

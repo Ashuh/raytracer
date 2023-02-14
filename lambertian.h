@@ -1,6 +1,7 @@
 #ifndef RAYTRACER_LAMBERTIAN_H
 #define RAYTRACER_LAMBERTIAN_H
 
+#include "hit_record.h"
 #include "material.h"
 
 class Lambertian: public Material {

@@ -1,6 +1,7 @@
 #ifndef RAYTRACER_HITTABLE_LIST_H
 #define RAYTRACER_HITTABLE_LIST_H
 
+#include "hit_record.h"
 #include "hittable.h"
 #include <memory>
 #include <vector>

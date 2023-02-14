@@ -1,6 +1,7 @@
 #ifndef RAYTRACER_SPHERE_H
 #define RAYTRACER_SPHERE_H
 
+#include "hit_record.h"
 #include "hittable.h"
 #include <optional>
 #include <tuple>

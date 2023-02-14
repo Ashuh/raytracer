@@ -1,6 +1,7 @@
 #ifndef RAYTRACER_MATERIAL_H
 #define RAYTRACER_MATERIAL_H
 
+#include "hit_record.h"
 #include "hittable.h"
 #include "material.h"
 #include "ray.h"

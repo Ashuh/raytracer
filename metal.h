@@ -1,6 +1,7 @@
 #ifndef RAYTRACER_METAL_H
 #define RAYTRACER_METAL_H
 
+#include "hit_record.h"
 #include "material.h"
 
 class Metal : public Material {
