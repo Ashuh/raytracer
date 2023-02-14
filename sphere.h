@@ -9,13 +9,14 @@ class Sphere : public Hittable {
 public:
     Sphere() = default;
 
-    Sphere(Point3 cen, double r) : center(cen), radius(r){};
+    Sphere(const Point3 &cen, double r, const std::shared_ptr<Material> &m) : center(cen), radius(r), material(m) {}
 
     [[nodiscard]] std::optional<HitRecord> hit(const Ray &r, double tMin, double tMax) const override;
 
 private:
     Point3 center;
     double radius;
+    std::shared_ptr<Material> material;
 };
 
 std::optional<HitRecord> Sphere::hit(const Ray &r, double tMin, double tMax) const {
@@ -40,7 +41,7 @@ std::optional<HitRecord> Sphere::hit(const Ray &r, double tMin, double tMax) con
 
     auto p = r.at(t);
     auto normal = (p - center) / radius;
-    return HitRecord::build(r, p, normal, t);
+    return HitRecord::build(r, p, normal, t, material);
 }
 
 #endif//RAYTRACER_SPHERE_H

@@ -59,6 +59,15 @@ public:
         return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
     }
 
+    /**
+     *
+     * @return true if the vector is close to zero in all dimensions.
+     */
+    [[nodiscard]] bool isNearZero() const {
+        const auto s = 1e-8;
+        return (std::abs(e[0]) < s) && (std::abs(e[1]) < s) && (std::abs(e[2]) < s);
+    }
+
 private:
     std::array<double, 3> e;
 };
@@ -124,5 +133,10 @@ Vec3 randomInUnitSphere() {
 inline Vec3 randomUnitVector() {
     return unitVector(randomInUnitSphere());
 }
+
+inline Vec3 reflect(const Vec3 &v, const Vec3 &n) {
+    return v - 2 * dot(v, n) * n;
+}
+
 
 #endif//RAYTRACER_VEC3_H
