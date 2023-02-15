@@ -38,18 +38,23 @@ int main() {
     // World
     HittableList world;
 
-    auto R = cos(M_PI/4);
+    auto material_ground = make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
+    auto material_center = make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
+    auto material_left = make_shared<Dielectric>(1.5);
+    auto material_right = make_shared<Metal>(Color(0.8, 0.6, 0.2), 0.0);
 
-    auto material_left  = make_shared<Lambertian>(Color(0,0,1));
-    auto material_right = make_shared<Lambertian>(Color(1,0,0));
-
-    world.add(make_shared<Sphere>(Point3(-R, 0, -1), R, material_left));
-    world.add(make_shared<Sphere>(Point3( R, 0, -1), R, material_right));
+    world.add(make_shared<Sphere>(Point3(0.0, -100.5, -1.0), 100.0, material_ground));
+    world.add(make_shared<Sphere>(Point3(0.0, 0.0, -1.0), 0.5, material_center));
+    world.add(make_shared<Sphere>(Point3(-1.0, 0.0, -1.0), 0.5, material_left));
+    world.add(make_shared<Sphere>(Point3(-1.0, 0.0, -1.0), -0.45, material_left));
+    world.add(make_shared<Sphere>(Point3(1.0, 0.0, -1.0), 0.5, material_right));
 
     // Camera
-    auto origin = Point3(0, 0, 0);
+    auto origin = Point3(-2, 2, 1);
+    auto lookDir = Point3(2, -2, -2);
+    auto verticalDir = Point3(0, 1, 0);
     auto focalLength = 1.0;
-    Camera cam(origin, M_PI_2, aspect_ratio, focalLength);
+    Camera cam(origin, lookDir, 0 * M_PI / 180, 20 * M_PI / 180, aspect_ratio, focalLength);
 
     // Render
     std::cout << "P3\n"
