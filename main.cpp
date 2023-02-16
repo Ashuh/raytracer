@@ -22,39 +22,43 @@ Color rayColor(const Ray &r, const Hittable &world, int depth) {
         }
         return {0, 0, 0};
     }
-    Vec3 unit_direction = unitVector(r.direction());
-    auto t = 0.5 * (unit_direction.y() + 1.0);
+    Vec3 unitDirection = unitVector(r.direction());
+    auto t = 0.5 * (unitDirection.y() + 1.0);
     return (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0);
 }
 
 int main() {
     // Image
-    const auto aspect_ratio = 16.0 / 9.0;
+    const auto aspectRatio = 16.0 / 9.0;
     const int image_width = 400;
-    const int image_height = static_cast<int>(image_width / aspect_ratio);
+    const int image_height = static_cast<int>(image_width / aspectRatio);
     const int samplesPerPixel = 100;
     const int maxDepth = 50;
 
     // World
     HittableList world;
 
-    auto material_ground = make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
-    auto material_center = make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
-    auto material_left = make_shared<Dielectric>(1.5);
-    auto material_right = make_shared<Metal>(Color(0.8, 0.6, 0.2), 0.0);
+    auto materialGround = make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
+    auto materialCenter = make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
+    auto materialLeft = make_shared<Dielectric>(1.5);
+    auto materialRight = make_shared<Metal>(Color(0.8, 0.6, 0.2), 0.0);
 
-    world.add(make_shared<Sphere>(Point3(0.0, -100.5, -1.0), 100.0, material_ground));
-    world.add(make_shared<Sphere>(Point3(0.0, 0.0, -1.0), 0.5, material_center));
-    world.add(make_shared<Sphere>(Point3(-1.0, 0.0, -1.0), 0.5, material_left));
-    world.add(make_shared<Sphere>(Point3(-1.0, 0.0, -1.0), -0.45, material_left));
-    world.add(make_shared<Sphere>(Point3(1.0, 0.0, -1.0), 0.5, material_right));
+    world.add(make_shared<Sphere>(Point3(0.0, -100.5, -1.0), 100.0, materialGround));
+    world.add(make_shared<Sphere>(Point3(0.0, 0.0, -1.0), 0.5, materialCenter));
+    world.add(make_shared<Sphere>(Point3(-1.0, 0.0, -1.0), 0.5, materialLeft));
+    world.add(make_shared<Sphere>(Point3(-1.0, 0.0, -1.0), -0.45, materialLeft));
+    world.add(make_shared<Sphere>(Point3(1.0, 0.0, -1.0), 0.5, materialRight));
 
     // Camera
-    auto origin = Point3(-2, 2, 1);
-    auto lookDir = Point3(2, -2, -2);
+    auto origin = Point3(3, 3, 2);
+    auto lookAt = Point3(0, 0, -1);
+    auto lookDir = lookAt - origin;
     auto verticalDir = Point3(0, 1, 0);
-    auto focalLength = 1.0;
-    Camera cam(origin, lookDir, 0 * M_PI / 180, 20 * M_PI / 180, aspect_ratio, focalLength);
+    auto roll = 0 * M_PI / 180;
+    auto vFov = 20 * M_PI / 180;
+    auto aperture = 2.0;
+    auto focusDist = lookDir.length();
+    Camera cam(origin, lookDir, roll, vFov, aspectRatio, aperture, focusDist);
 
     // Render
     std::cout << "P3\n"

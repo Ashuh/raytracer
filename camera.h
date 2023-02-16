@@ -9,24 +9,27 @@ public:
     /**
      *
      * @param vFov vertical field of view in radians.
-     * @param focalLength distance between projection plane and projection point
+     * @param focusDist distance between focus plane and projection point
      */
-    Camera(const Point3 &origin, const Vec3 &lookDir, double roll, double vFov, double aspectRatio, double focalLength) : origin(origin) {
-        auto viewportHeight = 2 * focalLength * tan(vFov / 2);
+    Camera(const Point3 &origin, const Vec3 &lookDir, double roll, double vFov,
+           double aspectRatio, double aperture, double focusDist) : origin(origin), lensRadius(aperture / 2) {
+        auto viewportHeight = 2 * focusDist * tan(vFov / 2);
         auto viewportWidth = aspectRatio * viewportHeight;
 
-        auto uv = Vec3(-sin(roll), cos(roll), 0);
+        auto vup = Vec3(-sin(roll), cos(roll), 0);
         auto unitLookDir = unitVector(lookDir);
-        auto unitHorizontal = unitVector(cross(uv, -unitLookDir));
-        auto unitVertical = cross(-unitLookDir, unitHorizontal);
+        unitHorizontal = unitVector(cross(vup, -unitLookDir));
+        unitVertical = cross(-unitLookDir, unitHorizontal);
 
         horizontal = viewportWidth * unitHorizontal;
         vertical = viewportHeight * unitVertical;
-        lowerLeftCorner = origin - horizontal / 2 - vertical / 2 + unitLookDir * focalLength;
+        lowerLeftCorner = origin - horizontal / 2 - vertical / 2 + unitLookDir * focusDist;
     }
 
-    [[nodiscard]] Ray getRay(double u, double v) const {
-        return {origin, lowerLeftCorner + u * horizontal + v * vertical - origin};
+    [[nodiscard]] Ray getRay(double s, double t) const {
+        Vec3 rd = lensRadius * randomInUnitDisk();
+        Vec3 offset = unitHorizontal * rd.x() + unitVertical * rd.y();
+        return {origin + offset, lowerLeftCorner + s * horizontal + t * vertical - origin - offset};
     }
 
 private:
@@ -34,6 +37,9 @@ private:
     Point3 lowerLeftCorner;
     Vec3 horizontal;
     Vec3 vertical;
+    Vec3 unitHorizontal;
+    Vec3 unitVertical;
+    double lensRadius;
 };
 
 #endif//RAYTRACER_CAMERA_H

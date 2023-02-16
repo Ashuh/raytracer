@@ -136,4 +136,14 @@ inline Vec3 randomUnitVector() {
     return unitVector(randomInUnitSphere());
 }
 
+Vec3 randomInUnitDisk() {
+    while (true) {
+        auto p = Vec3(randomDouble(-1, 1), randomDouble(-1, 1), 0);
+        if (p.lengthSquared() >= 1) {
+            continue;
+        }
+        return p;
+    }
+}
+
 #endif//RAYTRACER_VEC3_H
