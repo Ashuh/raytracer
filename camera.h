@@ -3,6 +3,7 @@
 
 #include "ray.h"
 #include "vec3.h"
+#include <atomic>
 
 class Camera {
 public:
@@ -32,6 +33,22 @@ public:
         return {origin + offset, lowerLeftCorner + s * horizontal + t * vertical - origin - offset};
     }
 
+    [[nodiscard]] const Point3 &getOrigin() const {
+        return origin;
+    }
+
+    void setOrigin(const Point3 &point) {
+        origin = point;
+    }
+
+    [[nodiscard]] double getLensRadius() const {
+        return lensRadius;
+    }
+
+    void setLensRadius(double radius) {
+        lensRadius = radius;
+    }
+
 private:
     Point3 origin;
     Point3 lowerLeftCorner;
@@ -39,7 +56,7 @@ private:
     Vec3 vertical;
     Vec3 unitHorizontal;
     Vec3 unitVertical;
-    double lensRadius;
+    std::atomic<double> lensRadius;
 };
 
 #endif//RAYTRACER_CAMERA_H

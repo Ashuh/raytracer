@@ -1,6 +1,6 @@
 #include "camera.h"
-#include "color.h"
 #include "dielectric.h"
+#include "gui.h"
 #include "hittable.h"
 #include "hittable_list.h"
 #include "lambertian.h"
@@ -10,6 +10,9 @@
 #include "sphere.h"
 #include "util.h"
 #include <iostream>
+#include <thread>
+
+#define M_PI 3.14159265359
 
 HittableList randomScene() {
     HittableList world;
@@ -57,14 +60,13 @@ HittableList randomScene() {
     return world;
 }
 
-
 int main() {
     // Image
-    const auto aspectRatio = 3.0 / 2.0;
-    const int imageWidth = 600;
-    const int imageHeight = static_cast<int>(imageWidth / aspectRatio);
     const int samplesPerPixel = 1;
-    const int maxDepth = 10;
+    const int maxDepth = 5;
+    auto imageWidth = 225;
+    auto imageHeight = 150;
+    double aspectRatio = static_cast<double>(imageWidth) / imageHeight;
 
     // World
     auto world = randomScene();
@@ -74,22 +76,25 @@ int main() {
     auto lookAt = Point3(0, 0, 0);
     auto lookDir = lookAt - origin;
     auto verticalDir = Point3(0, 1, 0);
+
     auto roll = 0 * M_PI / 180;
     auto vFov = 20 * M_PI / 180;
     auto aperture = 0.1;
     auto focusDist = 10.0;
-    Camera cam(origin, lookDir, roll, vFov, aspectRatio, aperture, focusDist);
 
-    Renderer renderer(imageWidth, imageHeight, samplesPerPixel, maxDepth);
-    renderer.render(cam, world);
+    std::shared_ptr<Camera> camera = std::make_shared<Camera>(origin, lookDir, roll, vFov, aspectRatio, aperture, focusDist);
+    std::shared_ptr<Renderer> renderer = std::make_shared<Renderer>(imageWidth, imageHeight, samplesPerPixel, maxDepth);
+    Gui gui(renderer, camera);
 
-    // Render
-    std::cout << "P3\n"
-              << imageWidth << ' ' << imageHeight << "\n255\n";
+    std::thread renderThread([&gui, &renderer, &camera, &world]() {
+        while (!gui.isClosing()) {
+            auto img = renderer->render(*camera, world);
+            gui.setImage(img);
+        }
+    });
 
-    for (int i = 0; i < imageHeight * imageWidth; ++i) {
-        writeColor(std::cout, renderer.image[i]);
-    }
+    gui.run();
+    renderThread.join();
 
     std::cerr << "\nDone.\n";
     return 0;

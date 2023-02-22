@@ -2,38 +2,73 @@
 #define RAYTRACER_RENDERER_H
 
 #include "camera.h"
+#include "color.h"
 #include "hittable_list.h"
+#include "image.h"
+#include <atomic>
+#include <mutex>
 
 class Renderer {
 public:
-    Color *image;
-
     Renderer(int imageWidth, int imageHeight, int samplesPerPixel, int maxDepth) : imageWidth(imageWidth),
                                                                                    imageHeight(imageHeight),
                                                                                    samplesPerPixel(samplesPerPixel),
-                                                                                   maxDepth(maxDepth) {
-        image = new Color[imageHeight * imageWidth];
-    }
+                                                                                   maxDepth(maxDepth) {}
 
-    void render(const Camera &camera, const HittableList &scene) {
+    std::shared_ptr<Image> render(const Camera &camera, const HittableList &scene) {
         int idx = 0;
+        int *data = new int[imageWidth * imageHeight];
 
         for (int j = imageHeight - 1; j >= 0; --j) {
-            std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
             auto v = (j + randomDouble()) / (imageHeight - 1);
             for (int i = 0; i < imageWidth; ++i) {
                 auto u = (i + randomDouble()) / (imageWidth - 1);
                 Color color = pixelColor(scene, camera, u, v);
-                image[idx++] = color;
+                data[idx++] = toInt(color);
             }
         }
+        std::shared_ptr<Image> img = std::make_shared<Image>(imageWidth, imageHeight, data);
+        return img;
+    }
+
+    void setImageWidth(int width) {
+        imageWidth = width;
+    }
+
+    void setImageHeight(int height) {
+        imageHeight = height;
+    }
+
+    void setSamplesPerPixel(int samples) {
+        samplesPerPixel = samples;
+    }
+
+    void setMaxDepth(int depth) {
+        maxDepth = depth;
+    }
+
+    int getImageWidth() const {
+        return imageWidth;
+    }
+
+    int getImageHeight() const {
+        return imageHeight;
+    }
+
+    int getSamplesPerPixel() const {
+        return samplesPerPixel;
+    }
+
+    int getMaxDepth() const {
+        return maxDepth;
     }
 
 private:
-    int imageWidth;
-    int imageHeight;
-    int samplesPerPixel;
-    int maxDepth;
+    std::atomic_int imageWidth;
+    std::atomic_int imageHeight;
+    std::atomic_int samplesPerPixel;
+    std::atomic_int maxDepth;
+    mutable std::mutex m;
 
     Color rayColor(const Ray &r, const Hittable &scene, int depth) {
         // If we've exceeded the ray bounce limit, no more light is gathered.
