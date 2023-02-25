@@ -6,6 +6,7 @@
 #include "hittable_list.h"
 #include "image.h"
 #include <atomic>
+#include <execution>
 #include <mutex>
 
 class Renderer {
@@ -16,17 +17,26 @@ public:
                                                                                    maxDepth(maxDepth) {}
 
     std::shared_ptr<Image> render(const Camera &camera, const HittableList &scene) {
-        int idx = 0;
-        int *data = new int[imageWidth * imageHeight];
+        const int numPixels = imageWidth * imageHeight;
+        int *data = new int[numPixels];
 
-        for (int j = imageHeight - 1; j >= 0; --j) {
-            auto v = (j + randomDouble()) / (imageHeight - 1);
-            for (int i = 0; i < imageWidth; ++i) {
-                auto u = (i + randomDouble()) / (imageWidth - 1);
-                Color color = pixelColor(scene, camera, u, v);
-                data[idx++] = toInt(color);
-            }
-        }
+        std::vector<int> indices(numPixels);
+        std::generate(indices.begin(), indices.end(), [n = 0]() mutable { return n++; });
+
+        std::vector<std::string> foo;
+        std::for_each(
+                std::execution::par,
+                indices.begin(),
+                indices.end(),
+                [this, &scene, &camera, &data, numPixels](auto &&i) {
+                    int row = static_cast<double>((numPixels - 1) - i) / imageWidth;
+                    int col = i % imageWidth;
+                    auto v = (row + randomDouble()) / (imageHeight - 1);
+                    auto u = (col + randomDouble()) / (imageWidth - 1);
+                    Color color = pixelColor(scene, camera, u, v);
+                    data[i] = toInt(color);
+                });
+
         std::shared_ptr<Image> img = std::make_shared<Image>(imageWidth, imageHeight, data);
         return img;
     }
