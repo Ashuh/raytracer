@@ -168,8 +168,12 @@ void Gui::update() {
         t.detach();
     }
 
-    ImGui::SameLine();
-    ImGui::Text("counter = %d", counter);
+    if (img != nullptr) {
+        long long totalRenderTime = img->cumulativeRenderTime.count();
+        long long avgRenderTime = totalRenderTime / img->samples;
+        ImGui::Text("Samples: %d Total Render Time: %lld ms (Total), %lld ms (Sample Avg)", img->samples, totalRenderTime, avgRenderTime);
+    }
+
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 }

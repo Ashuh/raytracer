@@ -26,6 +26,7 @@ public:
         std::vector<int> indices(numPixels);
         std::generate(indices.begin(), indices.end(), [n = 0]() mutable { return n++; });
 
+        auto start = std::chrono::high_resolution_clock::now();
         std::find_if(
                 std::execution::par,
                 indices.begin(),
@@ -44,7 +45,7 @@ public:
                     data[i] = toInt(cumulativeData[i] / (samplesAccumulated + 1));
                     return false;
                 });
-
+        auto end = std::chrono::high_resolution_clock::now();
 
         if (isInterrupted) {
             isInterrupted = false;
@@ -53,7 +54,9 @@ public:
         }
 
         samplesAccumulated++;
-        std::shared_ptr<Image> img = std::make_shared<Image>(imageWidth, imageHeight, data);
+        auto durationMillis = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        cumulativeRenderTimeMillis += durationMillis;
+        std::shared_ptr<Image> img = std::make_shared<Image>(imageWidth, imageHeight, samplesAccumulated, data, cumulativeRenderTimeMillis);
         isRendering = false;
         return img;
     }
@@ -87,6 +90,7 @@ public:
     }
 
     void reset() {
+        cumulativeRenderTimeMillis = std::chrono::milliseconds(0);
         samplesAccumulated = 0;
         std::fill(cumulativeData.begin(), cumulativeData.end(), Color(0, 0, 0));
     }
@@ -100,6 +104,7 @@ public:
 
 private:
     std::vector<Color> cumulativeData;
+    std::chrono::milliseconds cumulativeRenderTimeMillis = std::chrono::milliseconds(0);
     std::atomic_int samplesAccumulated = 0;
     std::atomic_bool isRendering = false;
     std::atomic_bool isInterrupted = false;
