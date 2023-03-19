@@ -3,6 +3,7 @@
 
 #include <glad/glad.h>
 
+#include "gui_listener.h"
 #include "image.h"
 #include "renderer.h"
 #include <GLFW/glfw3.h>
@@ -15,7 +16,7 @@
 
 class Gui {
 public:
-    Gui(const shared_ptr<Renderer> &renderer, const shared_ptr<Camera> &camera);
+    Gui();
 
     void run();
 
@@ -25,7 +26,7 @@ public:
 
     static void render();
 
-    static void shutdown();
+    void shutdown();
 
     void setImage(const std::shared_ptr<Image> &img) {
         std::lock_guard<std::mutex> lock(m);
@@ -41,14 +42,29 @@ public:
         return glfwWindowShouldClose(window);
     }
 
+    void setListener(const std::shared_ptr<GuiListener> &listener) {
+        guiListener = listener;
+    }
+
 private:
-    std::shared_ptr<Renderer> renderer;
-    std::shared_ptr<Camera> camera;
+    std::shared_ptr<GuiListener> guiListener;
     GLFWwindow *window{};
     std::shared_ptr<Image> image;
     GLuint texture{};
     std::mutex m;
 
+    std::atomic_int numSamples;
+    std::atomic_int maxDepth;
+    std::atomic<float> lensRadius;
+
+public:
+    void setNumSamples(int value);
+
+    void setMaxDepth(int value);
+
+    void setLensRadius(float value);
+
+private:
     void init();
 
     [[nodiscard]] std::pair<int, int> getWindowSize() const {
@@ -59,8 +75,7 @@ private:
     }
 };
 
-Gui::Gui(const shared_ptr<Renderer> &renderer, const shared_ptr<Camera> &camera) : renderer(renderer),
-                                                                                   camera(camera) {
+Gui::Gui() {
     init();
 }
 
@@ -82,8 +97,7 @@ void Gui::init() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);// Enable vsync
 
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
-    {
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         throw std::runtime_error("Unable to context to OpenGL");
     }
 
@@ -117,15 +131,12 @@ void Gui::newFrame() {
 void Gui::update() {
     auto img = getImage();
 
-    if (img == nullptr) {
-        return;
+    if (img != nullptr) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->data);
+        auto [width, height] = getWindowSize();
+        ImVec2 size(static_cast<float>(width), static_cast<float>(height));
+        ImGui::GetBackgroundDrawList()->AddImage((void *) (intptr_t) texture, ImVec2(0, 0), size);
     }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->data);
-
-    auto [width, height] = getWindowSize();
-    ImVec2 size(static_cast<float>(width), static_cast<float>(height));
-    ImGui::GetBackgroundDrawList()->AddImage((void *) (intptr_t) texture, ImVec2(0, 0), size);
 
     // render your GUI
     static int counter = 0;
@@ -133,26 +144,26 @@ void Gui::update() {
     ImGui::Begin("Render Settings");
     ImGui::Text("This is some useful text.");
 
-    static int numSamples = renderer->getSamplesPerPixel();
-    if (ImGui::SliderInt("Samples", &numSamples, 1, 20)) {
-        std::thread t([this]() {
-            renderer->setSamplesPerPixel(numSamples);
+    int sliderNumSamples = numSamples;
+    if (ImGui::SliderInt("Samples", &sliderNumSamples, 1, 20)) {
+        std::thread t([this, sliderNumSamples]() {
+            guiListener->onSamplesChanged(sliderNumSamples);
         });
         t.detach();
     }
 
-    static int maxDepth = renderer->getMaxDepth();
-    if (ImGui::SliderInt("Max Depth", &maxDepth, 1, 20)) {
-        std::thread t([this]() {
-            renderer->setMaxDepth(maxDepth);
+    int sliderMaxDepth = maxDepth;
+    if (ImGui::SliderInt("Max Depth", &sliderMaxDepth, 1, 20)) {
+        std::thread t([this, sliderMaxDepth]() {
+            guiListener->onMaxDepthChanged(sliderMaxDepth);
         });
         t.detach();
     }
 
-    static float lensRadius = camera->getLensRadius();
-    if (ImGui::SliderFloat("Lens Radius", &lensRadius, 0, 1)) {
-        std::thread t([this]() {
-            camera->setLensRadius(lensRadius);
+    float sliderLensRadius = lensRadius;
+    if (ImGui::SliderFloat("Lens Radius", &sliderLensRadius, 0, 1)) {
+        std::thread t([this, sliderLensRadius]() {
+            guiListener->onLensRadiusChanged(sliderLensRadius);
         });
         t.detach();
     }
@@ -170,6 +181,7 @@ void Gui::render() {
 }
 
 void Gui::shutdown() {
+    guiListener->onWindowClosing();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -185,6 +197,18 @@ void Gui::run() {
         glfwSwapBuffers(window);
     }
     shutdown();
+}
+
+void Gui::setNumSamples(int value) {
+    numSamples = value;
+}
+
+void Gui::setMaxDepth(int value) {
+    maxDepth = value;
+}
+
+void Gui::setLensRadius(float value) {
+    lensRadius = value;
 }
 
 #endif//RAYTRACER_GUI_H

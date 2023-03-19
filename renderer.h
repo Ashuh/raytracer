@@ -3,6 +3,7 @@
 
 #include "camera.h"
 #include "color.h"
+#include "gui.h"
 #include "hittable_list.h"
 #include "image.h"
 #include <atomic>
@@ -11,33 +12,49 @@
 
 class Renderer {
 public:
-    Renderer(int imageWidth, int imageHeight, int samplesPerPixel, int maxDepth) : imageWidth(imageWidth),
-                                                                                   imageHeight(imageHeight),
-                                                                                   samplesPerPixel(samplesPerPixel),
-                                                                                   maxDepth(maxDepth) {}
+    Renderer(int imageWidth, int imageHeight, int maxDepth) : imageWidth(imageWidth),
+                                                              imageHeight(imageHeight),
+                                                              maxDepth(maxDepth) {
+        cumulativeData.resize(imageWidth * imageHeight);
+    }
 
     std::shared_ptr<Image> render(const Camera &camera, const HittableList &scene) {
+        isRendering = true;
         const int numPixels = imageWidth * imageHeight;
         int *data = new int[numPixels];
 
         std::vector<int> indices(numPixels);
         std::generate(indices.begin(), indices.end(), [n = 0]() mutable { return n++; });
 
-        std::vector<std::string> foo;
-        std::for_each(
+        std::find_if(
                 std::execution::par,
                 indices.begin(),
                 indices.end(),
                 [this, &scene, &camera, &data, numPixels](auto &&i) {
+                    if (isInterrupted) {
+                        return true;
+                    }
+
                     int row = static_cast<double>((numPixels - 1) - i) / imageWidth;
                     int col = i % imageWidth;
                     auto v = (row + randomDouble()) / (imageHeight - 1);
                     auto u = (col + randomDouble()) / (imageWidth - 1);
                     Color color = pixelColor(scene, camera, u, v);
-                    data[i] = toInt(color);
+                    cumulativeData[i] += color;
+                    data[i] = toInt(cumulativeData[i] / (samplesAccumulated + 1));
+                    return false;
                 });
 
+
+        if (isInterrupted) {
+            isInterrupted = false;
+            isRendering = false;
+            return nullptr;
+        }
+
+        samplesAccumulated++;
         std::shared_ptr<Image> img = std::make_shared<Image>(imageWidth, imageHeight, data);
+        isRendering = false;
         return img;
     }
 
@@ -47,10 +64,6 @@ public:
 
     void setImageHeight(int height) {
         imageHeight = height;
-    }
-
-    void setSamplesPerPixel(int samples) {
-        samplesPerPixel = samples;
     }
 
     void setMaxDepth(int depth) {
@@ -65,20 +78,37 @@ public:
         return imageHeight;
     }
 
-    int getSamplesPerPixel() const {
-        return samplesPerPixel;
-    }
-
     int getMaxDepth() const {
         return maxDepth;
     }
 
+    int getSamplesAccumulated() const {
+        return samplesAccumulated;
+    }
+
+    void reset() {
+        samplesAccumulated = 0;
+        std::fill(cumulativeData.begin(), cumulativeData.end(), Color(0, 0, 0));
+    }
+
+    void interrupt() {
+        if (!isRendering) {
+            return;
+        }
+        isInterrupted = true;
+    }
+
 private:
+    std::vector<Color> cumulativeData;
+    std::atomic_int samplesAccumulated = 0;
+    std::atomic_bool isRendering = false;
+    std::atomic_bool isInterrupted = false;
+
     std::atomic_int imageWidth;
     std::atomic_int imageHeight;
-    std::atomic_int samplesPerPixel;
     std::atomic_int maxDepth;
     mutable std::mutex m;
+
 
     Color rayColor(const Ray &r, const Hittable &scene, int depth) {
         // If we've exceeded the ray bounce limit, no more light is gathered.
@@ -98,14 +128,8 @@ private:
     }
 
     Color pixelColor(const HittableList &scene, const Camera &camera, double u, double v) {
-        Color pixelColor(0, 0, 0);
-        for (int s = 0; s < samplesPerPixel; ++s) {
-            Ray r = camera.getRay(u, v);
-            pixelColor += rayColor(r, scene, maxDepth);
-        }
-
-        pixelColor /= samplesPerPixel;
-        return pixelColor;
+        Ray r = camera.getRay(u, v);
+        return rayColor(r, scene, maxDepth);
     }
 };
 
